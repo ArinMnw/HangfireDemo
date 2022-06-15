@@ -7,10 +7,8 @@ namespace HangfireDemo.Controllers
 
     public class ApplyStateFilter : IApplyStateFilter
     {
-        private readonly HttpClient httpClient;
-        public ApplyStateFilter(HttpClient httpClient)
+        public ApplyStateFilter()
         {
-            this.httpClient=httpClient;
         }
 
         public void OnStateApplied(ApplyStateContext context, IWriteOnlyTransaction transaction)
@@ -20,14 +18,14 @@ namespace HangfireDemo.Controllers
             var methodName = context.Job.Method.Name;
             if (deletedState != null)
             {
-                Console.WriteLine("DeletedState --> Hangfire Retrie Last Attamp");
+                Console.WriteLine("---------- DeletedState --> Hangfire Retrie Last Attamp ----------");
                 SendEmail();
                 // Execute code when the job has failed on all its attempts
             }
 
             if (failedState != null)
             {
-                Console.WriteLine("FailedState --> Hangfire Retrie Last Attamp");
+                Console.WriteLine("---------- FailedState --> Hangfire Retrie Last Attamp ----------");
                 SendEmail();
                 // Execute code when the job has failed on all its attempts
             }
@@ -40,13 +38,24 @@ namespace HangfireDemo.Controllers
 
         public async void SendEmail()
         {
-            var response = await httpClient.GetAsync("https://localhost:7240/SendEmail");
-            if (response.IsSuccessStatusCode)
+            using (var httpClient = new HttpClient())
             {
-                Console.WriteLine("Send Email Success!!");
-            }
-            else { 
-                Console.WriteLine("Send Email Fail!!!");
+                try
+                {
+                    var response = await httpClient.GetAsync("https://localhost:7240/SendEmail");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine("---------- Send Email Success!! ----------");
+                    }
+                    else
+                    {
+                        Console.WriteLine("----------  Send Email Fail!!! ----------");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("---------- Send Email Error!!! ----------");
+                }
             }
         }
     }
