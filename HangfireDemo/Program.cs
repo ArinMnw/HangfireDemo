@@ -14,9 +14,14 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHangfire(configuration =>
 {
     configuration.UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection"));
+    configuration.UseFilter(new ApplyStateFilter(new HttpClient()));
 });
+//GlobalJobFilters.Filters.Add(new ApplyStateFilter(IHttpClientFactory));
+
 builder.Services.AddHangfireServer();
 builder.Services.AddHttpClient("ApiService");
+builder.Services.AddHttpClient("EmailService");
+
 //IBackgroundJobClient client = new BackgroundJobClient(new SqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection")));
 //client.Enqueue(() =>
 //    Console.WriteLine("Hello world from Hangfire")

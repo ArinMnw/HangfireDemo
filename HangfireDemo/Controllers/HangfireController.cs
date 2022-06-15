@@ -12,6 +12,7 @@ namespace HangfireDemo.Controllers
         {
             this.backgroundJobClient=backgroundJobClient;
             this.httpClient=httpClientFactory.CreateClient("ApiService");
+
         }
         [HttpGet("{datetime}")]
         public void ScheduleHangfire(DateTime dateTime)
@@ -22,12 +23,21 @@ namespace HangfireDemo.Controllers
             //RecurringJob.AddOrUpdate(() => TestHangfire2(), "*/15 * * * *");
             //RecurringJob.AddOrUpdate("myrecurringjob", () => Console.WriteLine("Recurring!"), Cron.Daily);
         }
-
+        //[ApplyStateFilter]
+        [AutomaticRetry(Attempts = 1, OnAttemptsExceeded = AttemptsExceededAction.Fail)]
         [HttpGet("{datetime}")]
         public async Task TestHangfire2(DateTime dateTime)
         {
-            await httpClient.GetAsync("https://localhost:7084/Testapi");
             Console.WriteLine($"Hangfire Schedule Done!! {dateTime.ToString("dd MM yyyy HH:mm")}");
+            var response = await httpClient.GetAsync("https://localhost:7084/Testapi");
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("call api Success!!");
+            }
+            else
+            {
+                Console.WriteLine("call api Fail!!!");
+            }
         }
 
         [HttpGet("{datetime}/{jobId}")]
@@ -36,6 +46,25 @@ namespace HangfireDemo.Controllers
             backgroundJobClient.Enqueue(() => TestHangfire2(dateTime));
             backgroundJobClient.Delete(jobId);
             Console.WriteLine("Hangfire Enqueue Job Now!!");
+        }
+        [HttpGet]
+        public void Enqueue()
+        {
+            var jobId = backgroundJobClient.Enqueue(() => TestHangfire2(new DateTime()));
+            //backgroundJobClient.Delete(jobId);
+            Console.WriteLine($"Hangfire Enqueue Job Now!! {jobId}");
+        }
+
+        [HttpGet("{jobId}")]
+        public void Continue(string jobId)
+        {
+            BackgroundJob.ContinueJobWith(jobId, () => Console.WriteLine($"Continuation!! {jobId}"));
+        }
+
+        [HttpGet("{jobId}")]
+        public void Requeue(string jobId)
+        {
+            BackgroundJob.Requeue(jobId);
         }
 
     }
